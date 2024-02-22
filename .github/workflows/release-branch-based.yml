@@ -173,7 +173,7 @@ jobs:
   #         git push
 
   build-and-push-docker:
-    needs: [prepare-major-minor-release, prepare-patch-release]
+    needs: prepare-release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

@@ -1,18 +1,17 @@
-import React from 'react'
-import { Button, Typography, Grid } from '@mui/material';
-import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { Button, Typography, Grid } from "@mui/material";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
-import { getUser } from '../redux/user/actions';
+import { getUser } from "../redux/user/actions";
 
 export default function SignIn() {
-
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleLogIn = () => {
-    dispatch(getUser('ben')) 
-  }
+    dispatch(getUser("ben"));
+  };
 
   return (
     <Grid
@@ -20,14 +19,16 @@ export default function SignIn() {
       justifyContent="center"
       alignItems="center"
       spacing={2}
-      style={{ height: '30vh' }} // Adjust the height to fit your needs
+      style={{ height: "30vh" }} // Adjust the height to fit your needs
     >
       <Grid item>
-        <Typography>Welcome to this POC - Frontend 1</Typography>
+        <Typography>Welcome to this release v.0.2.0 - Hoho</Typography>
       </Grid>
       <Grid item>
-      <Button variant="contained" disableElevation onClick={handleLogIn}>Log In</Button>
+        <Button variant="contained" disableElevation onClick={handleLogIn}>
+          Log In
+        </Button>
       </Grid>
     </Grid>
-  )
+  );
 }

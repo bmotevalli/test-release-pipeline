@@ -20,7 +20,7 @@ jobs:
       - name: Check release type and branch
         id: check_branch
         run: |
-          if [[ "${{ github.event.inputs.releaseType }}" == "patch" && "$GITHUB_REF" =~ refs/heads/release.* ]]; then
+          if [[ "${{ github.event.inputs.releaseType }}" == "patch" && "$GITHUB_REF" == *refs/heads/release* ]]; then
             echo "::set-output name=is-valid::true"
           elif [[ "${{ github.event.inputs.releaseType }}" != "patch" && "$GITHUB_REF" == refs/heads/master ]]; then
             echo "::set-output name=is-valid::true"

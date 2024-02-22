@@ -17,6 +17,7 @@ jobs:
     outputs:
       should-release: ${{ steps.check_branch.outputs.should-release }}
       release-version: ${{ steps.bump_version.outputs.version }}
+      new-branch-name: ${{ steps.create_release_branch.outputs.new-branch-name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -53,6 +54,17 @@ jobs:
           NEW_VERSION=$(echo "$OUTPUT" | grep 'new_version=' | sed -r 's/new_version=//')
           echo "New version: $NEW_VERSION"
           echo "::set-output name=version::$NEW_VERSION"
+
+      - name: Create release branch for major/minor releases
+        id: create_release_branch
+        if: github.ref == 'refs/heads/master' && (github.event.inputs.releaseType == 'major' || github.event.inputs.releaseType == 'minor')
+        run: |
+          NEW_BRANCH_NAME="release-${{ steps.bump_version.outputs.version }}"
+          git checkout -b $NEW_BRANCH_NAME
+          git push -u origin $NEW_BRANCH_NAME
+          echo "::set-output name=new-branch-name::$NEW_BRANCH_NAME"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release:
     needs: prepare-release
@@ -95,104 +107,3 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.release-version }}
-
-
-
-
-
-
-
-
-
-# name: Release - Branch Based
-
-# on:
-#   workflow_dispatch:
-#     inputs:
-#       releaseType:
-#         description: 'Release Type (patch/minor/major)'
-#         required: true
-#         default: 'patch'
-#     branches:
-#       - master
-
-# jobs:
-#   prepare-release:
-#     runs-on: ubuntu-latest
-#     outputs:
-#       new-branch-name: ${{ steps.create_release_branch.outputs.new-branch-name }}
-#       release-version: ${{ steps.bump_version.outputs.version }}
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v2
-#         with:
-#           submodules: true
-#           fetch-depth: 0 # Fetch all history for all tags and branches
-
-#       - name: Set up Python
-#         uses: actions/setup-python@v2
-#         with:
-#           python-version: '3.x'
-
-#       - name: Install bump2version
-#         run: pip install bump2version
-
-#       - name: Bump version (dry run)
-#         id: bump_version
-#         run: |
-#           bump2version ${{ github.event.inputs.releaseType }} --config-file ./setup.cfg --dry-run --list
-#           echo "::set-output name=version::$(grep 'new_version=' | sed -r 's/new_version=//')"
-
-#       - name: Create release branch for major/minor releases
-#         id: create_release_branch
-#         if: ${{ github.event.inputs.releaseType == 'major' || github.event.inputs.releaseType == 'minor' }}
-#         run: |
-#           NEW_BRANCH_NAME="release-v$(echo '${{ steps.bump_version.outputs.version }}' | awk -F. '{printf "%d.%d.0", $1, $2}')"
-#           git checkout -b $NEW_BRANCH_NAME
-#           git push -u origin $NEW_BRANCH_NAME
-#           echo "::set-output name=new-branch-name::$NEW_BRANCH_NAME"
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-#   release:
-#     needs: prepare-release
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v2
-#         with:
-#           ref: ${{ needs.prepare-release.outputs.new-branch-name }}
-#           submodules: true
-
-#       - name: Set up Python
-#         uses: actions/setup-python@v2
-#         with:
-#           python-version: '3.x'
-
-#       - name: Install bump2version
-#         run: pip install bump2version
-
-#       - name: Set up Git identity
-#         run: |
-#           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-#           git config --global user.name "GitHub Actions"
-
-#       - name: Bump version
-#         if: needs.prepare-release.outputs.new-branch-name == ''
-#         run: |
-#           bump2version ${{ github.event.inputs.releaseType }} --config-file ./setup.cfg
-#           git push origin --tags
-#           git push
-
-#       - name: Log in to Docker Hub
-#         uses: docker/login-action@v1
-#         with:
-#           username: ${{ secrets.DOCKER_HUB_USERNAME }}
-#           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
-#       - name: Build and Push Versioned Docker image
-#         uses: docker/build-push-action@v2
-#         with:
-#           context: .
-#           file: ./Dockerfile
-#           push: true
-#           tags: benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.release-version }}

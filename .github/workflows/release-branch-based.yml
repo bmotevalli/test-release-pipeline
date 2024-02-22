@@ -28,6 +28,7 @@ jobs:
             echo "::set-output name=is-valid::false"
             echo "Release type and branch mismatch. Major/minor releases should be from master, patches from release branches."
             exit 1
+          fi
 
   prepare-major-minor-release:
     needs: sanity-check

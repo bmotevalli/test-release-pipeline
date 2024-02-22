@@ -55,13 +55,15 @@ jobs:
           echo "New version: $NEW_VERSION"
           echo "::set-output name=version::$NEW_VERSION"
 
-      - name: Create release branch for major/minor releases
+      - name: Create release branch for major/minor releases and bump version
         id: create_release_branch
         if: github.ref == 'refs/heads/master' && (github.event.inputs.releaseType == 'major' || github.event.inputs.releaseType == 'minor')
         run: |
           NEW_BRANCH_NAME="release-${{ steps.bump_version.outputs.version }}"
           git checkout -b $NEW_BRANCH_NAME
+          bump2version ${{ github.event.inputs.releaseType }} --config-file ./setup.cfg
           git push -u origin $NEW_BRANCH_NAME
+          git push origin $NEW_BRANCH_NAME --tags
           echo "::set-output name=new-branch-name::$NEW_BRANCH_NAME"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

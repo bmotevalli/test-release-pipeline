@@ -1,4 +1,4 @@
-name: Branch Based Release
+name: Release - Branch Based
 
 on:
   workflow_dispatch:

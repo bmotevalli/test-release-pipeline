@@ -1,4 +1,4 @@
-name: Tag Based Release
+name: Release - Tag Based
 
 on:
   workflow_dispatch:

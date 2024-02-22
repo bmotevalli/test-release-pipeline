@@ -22,7 +22,7 @@ export default function SignIn() {
       style={{ height: "30vh" }} // Adjust the height to fit your needs
     >
       <Grid item>
-        <Typography>Welcome to this release v.0.2.0 - Hoho</Typography>
+        <Typography>Welcome to this release v.0.2.0 - HohoHoho</Typography>
       </Grid>
       <Grid item>
         <Button variant="contained" disableElevation onClick={handleLogIn}>

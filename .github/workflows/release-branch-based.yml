@@ -49,8 +49,10 @@ jobs:
         id: bump_version
         if: steps.check_branch.outputs.should-release == 'true'
         run: |
-          bump2version ${{ github.event.inputs.releaseType }} --config-file ./setup.cfg --dry-run --list
-          echo "::set-output name=version::$(grep 'new_version=' | sed -r 's/new_version=//')"
+          OUTPUT=$(bump2version ${{ github.event.inputs.releaseType }} --config-file ./setup.cfg --dry-run --list)
+          NEW_VERSION=$(echo "$OUTPUT" | grep 'new_version=' | sed -r 's/new_version=//')
+          echo "New version: $NEW_VERSION"
+          echo "::set-output name=version::$NEW_VERSION"
 
   release:
     needs: prepare-release

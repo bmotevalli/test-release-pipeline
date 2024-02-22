@@ -72,6 +72,3 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: benmotevalli/test-release-pipeline-prod:${{ steps.bump_version.outputs.version }}
-
-
-

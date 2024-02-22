@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: landing-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-app
+  template:
+    metadata:
+      labels:
+        app: test-app
+        # Add or modify the label below to trigger the update
+        version: v1
+    spec:
+      imagePullSecrets:
+        - name: gitlab-cred
+      containers:
+        - name: test-app-container
+          image: registry.gitlab.com/micro-arch/landing-app:latest
+          ports:
+            - containerPort: 3000
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+            requests:
+              cpu: "500m"
+              memory: "256Mi"

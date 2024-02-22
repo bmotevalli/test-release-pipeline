@@ -92,87 +92,6 @@ jobs:
           git merge ${{ steps.create_branch.outputs.new-branch-name }} --no-ff --message "Merge release changes back into master"
           git push origin master
 
-  # prepare-major-minor-release:
-  #   needs: sanity-check
-  #   if: ${{ needs.sanity-check.outputs.is-valid == 'true' && github.event.inputs.releaseType != 'patch' }}
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     new-version: ${{ steps.bump_version.outputs.version }}
-  #     new-branch-name: ${{ steps.create_branch.outputs.new-branch-name }}
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v2
-  #       with:
-  #         python-version: '3.x'
-
-  #     - name: Install bump2version
-  #       run: pip install bump2version
-
-  #     - name: Configure Git identity
-  #       run: |
-  #         git config --global user.name "GitHub Actions"
-  #         git config --global user.email "actions@github.com"
-
-  #     - name: Determine new version and create release branch
-  #       id: create_branch
-  #       run: |
-  #         VERSION=$(bump2version --dry-run --list ${{ github.event.inputs.releaseType }} --config-file ./setup.cfg | grep new_version= | sed -r 's/new_version=//')
-  #         NEW_BRANCH_NAME="release-${VERSION}"
-  #         git checkout -b ${NEW_BRANCH_NAME}
-  #         echo "::set-output name=version::${VERSION}"
-  #         echo "::set-output name=new-branch-name::${NEW_BRANCH_NAME}"
-
-  #     - name: Bump version and tag on release branch
-  #       id: bump_version
-  #       run: |
-  #         bump2version ${{ github.event.inputs.releaseType }} --config-file ./setup.cfg
-  #         git push --set-upstream origin ${{ steps.create_branch.outputs.new-branch-name }}
-  #         git push origin ${{ steps.create_branch.outputs.new-branch-name }} --tags
-      
-  #     - name: Checkout master branch and merge release changes
-  #       if: github.ref == 'refs/heads/master'
-  #       run: |
-  #         git checkout master
-  #         git merge ${{ steps.create_branch.outputs.new-branch-name }} --no-ff --message "Merge release changes back into master"
-  #         git push origin master
-
-  # prepare-patch-release:
-  #   needs: sanity-check
-  #   if: ${{ needs.sanity-check.outputs.is-valid == 'true' && github.event.inputs.releaseType == 'patch' }}
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     new-version: ${{ steps.bump_version.outputs.version }}
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v2
-  #       with:
-  #         python-version: '3.x'
-
-  #     - name: Install bump2version
-  #       run: pip install bump2version
-
-  #     - name: Configure Git identity
-  #       run: |
-  #         git config --global user.name "GitHub Actions"
-  #         git config --global user.email "actions@github.com"
-
-  #     - name: Bump version and tag for patch release
-  #       id: bump_version
-  #       run: |
-  #         bump2version ${{ github.event.inputs.releaseType }} --config-file ./setup.cfg
-  #         NEW_VERSION=$(grep 'current_version = ' ./setup.cfg | sed -r 's/current_version = //')
-  #         echo "::set-output name=version::$NEW_VERSION"
-  #         git push origin --tags
-  #         git push
-
   build-and-push-docker:
     needs: prepare-release
     runs-on: ubuntu-latest
@@ -191,7 +110,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: benmotevalli/test-release-pipeline-prod:${{ needs.prepare-major-minor-release.outputs.new-version || needs.prepare-patch-release.outputs.new-version }}
+          tags: benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}
 
 
 

@@ -83,6 +83,7 @@ jobs:
           else
             git push origin --tags
             git push
+          fi
 
       - name: Checkout master branch and merge release changes (for major/minor)
         if: github.ref == 'refs/heads/master' && github.event.inputs.releaseType != 'patch'

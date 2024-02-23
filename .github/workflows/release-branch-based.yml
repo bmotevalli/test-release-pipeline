@@ -30,6 +30,27 @@ jobs:
             exit 1
           fi
 
+  build-docker-image:
+    needs: sanity-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build Docker image with 'latest' tag
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: benmotevalli/test-release-pipeline-prod:latest
+
+
   prepare-release:
     needs: sanity-check
     if: ${{ needs.sanity-check.outputs.is-valid == 'true' }}
@@ -92,128 +113,21 @@ jobs:
           git merge ${{ steps.create_branch.outputs.new-branch-name }} --no-ff --message "Merge release changes back into master"
           git push origin master
 
-  build-and-push-docker:
+  retag-and-push-docker-image:
     needs: prepare-release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
       - name: Log in to Docker Hub
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Build and Push Versioned Docker image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}
+      - name: Pull 'latest' Docker image
+        run: docker pull benmotevalli/test-release-pipeline-prod:latest
 
+      - name: Tag Docker image with new version
+        run: docker tag benmotevalli/test-release-pipeline-prod:latest benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}
 
-
-
-# name: Release - Branch Based
-
-# on:
-#   workflow_dispatch:
-#     inputs:
-#       releaseType:
-#         description: 'Release Type (patch/minor/major)'
-#         required: true
-#         default: 'patch'
-#     branches:
-#       - master
-#       - release/*
-
-# jobs:
-#   prepare-release:
-#     runs-on: ubuntu-latest
-#     outputs:
-#       should-release: ${{ steps.check_branch.outputs.should-release }}
-#       release-version: ${{ steps.bump_version.outputs.version }}
-#       new-branch-name: ${{ steps.create_release_branch.outputs.new-branch-name }}
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v2
-#         with:
-#           submodules: true
-#           fetch-depth: 0 # Fetch all history for all tags and branches
-
-#       - name: Set up Python
-#         uses: actions/setup-python@v2
-#         with:
-#           python-version: '3.x'
-
-#       - name: Install bump2version
-#         run: pip install bump2version
-
-#       - name: Configure Git identity
-#         run: |
-#           git config --global user.name "GitHub Actions"
-#           git config --global user.email "actions@github.com"
-
-#       - name: Check if it's a patch release on a release branch
-#         id: check_branch
-#         run: |
-#           if [[ "${{ github.event.inputs.releaseType }}" == "patch" && "$GITHUB_REF" == refs/heads/release* ]]; then
-#             echo "::set-output name=should-release::true"
-#           elif [[ "${{ github.event.inputs.releaseType }}" != "patch" && "$GITHUB_REF" == refs/heads/master ]]; then
-#             echo "::set-output name=should-release::true"
-#           else
-#             echo "::set-output name=should-release::false"
-#             echo "Release type and branch mismatch. Major/minor releases should be from master, patches from release branches."
-#             exit 1
-#           fi
-
-#       - name: Bump version (dry run)
-#         id: bump_version
-#         if: steps.check_branch.outputs.should-release == 'true'
-#         run: |
-#           OUTPUT=$(bump2version ${{ github.event.inputs.releaseType }} --config-file ./setup.cfg --dry-run --list)
-#           NEW_VERSION=$(echo "$OUTPUT" | grep 'new_version=' | sed -r 's/new_version=//')
-#           echo "New version: $NEW_VERSION"
-#           echo "::set-output name=version::$NEW_VERSION"
-
-#       - name: Create release branch for major/minor releases and bump version
-#         id: create_release_branch
-#         if: github.ref == 'refs/heads/master' && (github.event.inputs.releaseType == 'major' || github.event.inputs.releaseType == 'minor')
-#         run: |
-#           NEW_BRANCH_NAME="release-${{ steps.bump_version.outputs.version }}"
-#           git checkout -b $NEW_BRANCH_NAME
-#           bump2version ${{ github.event.inputs.releaseType }} --config-file ./setup.cfg
-#           git push -u origin $NEW_BRANCH_NAME
-#           git push origin $NEW_BRANCH_NAME --tags
-#           echo "::set-output name=new-branch-name::$NEW_BRANCH_NAME"
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-#   release:
-#     needs: prepare-release
-#     if: needs.prepare-release.outputs.should-release == 'true'
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v2
-#         with:
-#           submodules: true
-
-#       - name: Set up Python
-#         uses: actions/setup-python@v2
-#         with:
-#           python-version: '3.x'
-
-#       - name: Log in to Docker Hub
-#         uses: docker/login-action@v1
-#         with:
-#           username: ${{ secrets.DOCKER_HUB_USERNAME }}
-#           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
-#       - name: Build and Push Versioned Docker image
-#         uses: docker/build-push-action@v2
-#         with:
-#           context: .
-#           file: ./Dockerfile
-#           push: true
-#           tags: benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.release-version }}
+      - name: Push Docker image with new version
+        run: docker push benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}

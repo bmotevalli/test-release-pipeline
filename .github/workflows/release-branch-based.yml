@@ -52,7 +52,7 @@ jobs:
 
 
   prepare-release:
-    needs: sanity-check
+    needs: build-docker-image
     if: ${{ needs.sanity-check.outputs.is-valid == 'true' }}
     runs-on: ubuntu-latest
     outputs:

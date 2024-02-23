@@ -46,6 +46,22 @@ jobs:
             exit 1
           fi
 
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build Docker image with 'latest' tag
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: benmotevalli/test-release-pipeline-prod:latest
+
+
       - name: Bump version
         id: bump_version
         run: |
@@ -59,12 +75,6 @@ jobs:
           git push origin --tags
           git push
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
       - name: Build and Push Versioned Docker image
         uses: docker/build-push-action@v2
         with:
@@ -72,6 +82,15 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: benmotevalli/test-release-pipeline-prod:${{ steps.bump_version.outputs.version }}
+
+      - name: Pull 'latest' Docker image
+        run: docker pull benmotevalli/test-release-pipeline-prod:latest
+
+      - name: Tag Docker image with new version
+        run: docker tag benmotevalli/test-release-pipeline-prod:latest benmotevalli/test-release-pipeline-prod:${{ steps.bump_version.outputs.version }}
+
+      - name: Push Docker image with new version
+        run: docker push benmotevalli/test-release-pipeline-prod:${{ steps.bump_version.outputs.version }}
 
 
 

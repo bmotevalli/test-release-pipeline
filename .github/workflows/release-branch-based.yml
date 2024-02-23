@@ -30,6 +30,27 @@ jobs:
             exit 1
           fi
 
+  build-docker-image:
+    needs: sanity-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build Docker image with 'latest' tag
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: benmotevalli/test-release-pipeline-prod:latest
+
+
   prepare-release:
     needs: sanity-check
     if: ${{ needs.sanity-check.outputs.is-valid == 'true' }}
@@ -92,22 +113,21 @@ jobs:
           git merge ${{ steps.create_branch.outputs.new-branch-name }} --no-ff --message "Merge release changes back into master"
           git push origin master
 
-  build-and-push-docker:
+  retag-and-push-docker-image:
     needs: prepare-release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
       - name: Log in to Docker Hub
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Build and Push Versioned Docker image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}
+      - name: Pull 'latest' Docker image
+        run: docker pull benmotevalli/test-release-pipeline-prod:latest
+
+      - name: Tag Docker image with new version
+        run: docker tag benmotevalli/test-release-pipeline-prod:latest benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}
+
+      - name: Push Docker image with new version
+        run: docker push benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}

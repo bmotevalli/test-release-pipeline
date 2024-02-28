@@ -72,7 +72,7 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: ${{ env.USERNAME }}
+          username: ${{ vars.USERNAME }}
           password: ${{ secrets.TOKEN }}
 
       - name: Build and Push Docker image to GHCR (Prod)
@@ -80,7 +80,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          tags: ghcr.io/${{ env.USERNAME }}/test-release-pipeline-prod:latest
+          tags: ghcr.io/${{ vars.USERNAME }}/test-release-pipeline-prod:latest
           push: true
 
   build-and-push-ghcr-dev:
@@ -97,7 +97,7 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: ${{ env.USERNAME }}
+          username: ${{ vars.USERNAME }}
           password: ${{ secrets.TOKEN }}
 
       - name: Extract timestamp
@@ -109,5 +109,5 @@ jobs:
         with:
           context: .
           file: .Dockerfile # Consider using a separate Dockerfile for dev if needed
-          tags: ghcr.io/${{ env.USERNAME }}/test-release-pipeline-dev:latest-${{ steps.timestamp.outputs.timestamp }}
+          tags: ghcr.io/${{ vars.USERNAME }}/test-release-pipeline-dev:latest-${{ steps.timestamp.outputs.timestamp }}
           push: true

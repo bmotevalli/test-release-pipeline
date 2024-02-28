@@ -108,6 +108,6 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: .Dockerfile # Consider using a separate Dockerfile for dev if needed
+          file: ./Dockerfile # Consider using a separate Dockerfile for dev if needed
           tags: ghcr.io/${{ vars.USERNAME }}/test-release-pipeline-dev:latest-${{ steps.timestamp.outputs.timestamp }}
           push: true

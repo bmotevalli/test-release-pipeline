@@ -32,11 +32,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Log in to Docker Hub
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v1
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          registry: ghcr.io
+          username: ${{ vars.USERNAME }}
+          password: ${{ secrets.TOKEN }}
 
       - name: Build Docker image with 'latest' tag
         uses: docker/build-push-action@v2
@@ -44,7 +45,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: benmotevalli/test-release-pipeline-prod:latest
+          tags: ghcr.io/${{ vars.USERNAME }}/test-release-pipeline-prod:latest
 
   prepare-release:
     needs: build-docker-image
@@ -83,21 +84,21 @@ jobs:
     needs: prepare-release
     runs-on: ubuntu-latest
     steps:
-      - name: Log in to Docker Hub
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v1
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          registry: ghcr.io
+          username: ${{ vars.USERNAME }}
+          password: ${{ secrets.TOKEN }}
 
       - name: Pull 'latest' Docker image
-        run: docker pull benmotevalli/test-release-pipeline-prod:latest
+        run: docker pull ghcr.io/${{ vars.USERNAME }}/test-release-pipeline-prod:latest
 
       - name: Tag Docker image with new version
-        run: docker tag benmotevalli/test-release-pipeline-prod:latest benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}
+        run: docker tag ghcr.io/${{ vars.USERNAME }}/test-release-pipeline-prod:latest ghcr.io/${{ vars.USERNAME }}/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}
 
       - name: Push Docker image with new version
-        run: docker push benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}
-
+        run: docker push ghcr.io/${{ vars.USERNAME }}/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}
 
 
 
@@ -115,33 +116,13 @@ jobs:
 #       - release/*
 
 # jobs:
-#   release:
+#   sanity-check:
 #     runs-on: ubuntu-latest
 #     steps:
-#       - uses: actions/checkout@v2
-#         with:
-#           submodules: true
-#           fetch-depth: 0 # Important for getting all tags and branches
-
-#       - name: Set up Python
-#         uses: actions/setup-python@v2
-#         with:
-#           python-version: '3.x'
-
-#       - name: Install bump2version
-#         run: pip install bump2version
-
-#       - name: Set up Git identity
-#         run: |
-#           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-#           git config --global user.name "GitHub Actions"
-
 #       - name: Check branch for patch release
-#         id: check_branch
 #         if: ${{ github.event.inputs.releaseType == 'patch' }}
 #         run: |
 #           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
-#           echo "Current branch: $BRANCH_NAME"
 #           if [[ $BRANCH_NAME == release* ]]; then
 #             echo "Valid branch for patch release."
 #           else
@@ -149,6 +130,11 @@ jobs:
 #             exit 1
 #           fi
 
+#   build-docker-image:
+#     needs: sanity-check
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
 
 #       - name: Log in to Docker Hub
 #         uses: docker/login-action@v1
@@ -164,13 +150,32 @@ jobs:
 #           push: true
 #           tags: benmotevalli/test-release-pipeline-prod:latest
 
+#   prepare-release:
+#     needs: build-docker-image
+#     runs-on: ubuntu-latest
+#     outputs:
+#       new-version: ${{ steps.bump_version.outputs.version }}
+#     steps:
+#       - uses: actions/checkout@v2
+
+#       - name: Set up Python
+#         uses: actions/setup-python@v2
+#         with:
+#           python-version: '3.x'
+
+#       - name: Install bump2version
+#         run: pip install bump2version
+
+#       - name: Set up Git identity
+#         run: |
+#           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+#           git config --global user.name "GitHub Actions"
 
 #       - name: Bump version
 #         id: bump_version
 #         run: |
 #           bump2version ${{ github.event.inputs.releaseType }} --config-file ./setup.cfg
 #           NEW_VERSION=$(grep 'current_version = ' ./setup.cfg | sed -r 's/current_version = //')
-#           echo "New version: $NEW_VERSION"
 #           echo "::set-output name=version::$NEW_VERSION"
 
 #       - name: Push the tags and changes
@@ -178,22 +183,23 @@ jobs:
 #           git push origin --tags
 #           git push
 
-#       - name: Build and Push Versioned Docker image
-#         uses: docker/build-push-action@v2
+#   retag-and-push-docker-image:
+#     needs: prepare-release
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Log in to Docker Hub
+#         uses: docker/login-action@v1
 #         with:
-#           context: .
-#           file: ./Dockerfile
-#           push: true
-#           tags: benmotevalli/test-release-pipeline-prod:${{ steps.bump_version.outputs.version }}
+#           username: ${{ secrets.DOCKER_HUB_USERNAME }}
+#           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
 #       - name: Pull 'latest' Docker image
 #         run: docker pull benmotevalli/test-release-pipeline-prod:latest
 
 #       - name: Tag Docker image with new version
-#         run: docker tag benmotevalli/test-release-pipeline-prod:latest benmotevalli/test-release-pipeline-prod:${{ steps.bump_version.outputs.version }}
+#         run: docker tag benmotevalli/test-release-pipeline-prod:latest benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}
 
 #       - name: Push Docker image with new version
-#         run: docker push benmotevalli/test-release-pipeline-prod:${{ steps.bump_version.outputs.version }}
-
+#         run: docker push benmotevalli/test-release-pipeline-prod:${{ needs.prepare-release.outputs.new-version }}
 
 

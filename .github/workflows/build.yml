@@ -80,7 +80,8 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          tags: ghcr.io/${{ vars.USERNAME }}/test-release-pipeline-prod:latest
+          # tags: ghcr.io/${{ vars.USERNAME }}/test-release-pipeline-prod:latest
+          tags: ghcr.io/auscope/test-release-pipeline-prod:latest
           push: true
 
   build-and-push-ghcr-dev:
